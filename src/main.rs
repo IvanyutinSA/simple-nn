@@ -1,4 +1,7 @@
-use simple_nn::matrix::Matrix;
+use simple_nn::{
+    matrix::Matrix,
+    parser::simple_csv::parse_csv,
+};
 
 
 fn main() {
@@ -13,4 +16,6 @@ fn main() {
     println!("{:?}", &a*&c);
     println!("a.*c");
     println!("{:?}", a.mul_pointwise(&b).unwrap());
+    let parsed = parse_csv("datasets/Salary_dataset.csv", ',').unwrap();
+    println!("{:?}", Matrix::from(parsed));
 }
