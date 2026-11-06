@@ -7,6 +7,8 @@ use std::{
         Mul,
     },
 };
+use rand;
+use rand_distr::Distribution;
 
 type MatResult<T> = Result<T, MatError>;
 
@@ -16,6 +18,7 @@ pub enum MatError {
     DimensionMismatch,
 }
 
+#[derive(Clone, Default)]
 pub struct Matrix {
     pub inner: Vec<f64>,
     pub m: usize,
@@ -28,6 +31,33 @@ impl Matrix {
             inner: vec![val; m*n],
             m,
             n,
+        }
+    }
+
+    pub fn project_rows(&self, row_ids: &Vec<usize>) -> Matrix {
+        if row_ids.iter().max().unwrap() >= &self.m {
+            panic!();
+        }
+        let mut out_mat = Matrix::fill(row_ids.len(), self.n, 0.);
+        for i in 0..row_ids.len() {
+            for j in 0..self.n {
+                out_mat.set(i, j, self.get(row_ids[i], j).unwrap()).unwrap();
+            }
+        }
+        out_mat
+    }
+
+    pub fn project_cols(&self, col_ids: &Vec<usize>) -> Matrix {
+        self.transpose().project_rows(col_ids).transpose()
+    }
+
+    pub fn std(m: usize, n: usize) -> Self {
+        let rng = rand::rng();
+        let inner = rand_distr::StandardNormal{}.sample_iter(rng)
+            .take(m*n)
+            .collect();
+        Matrix {
+            m, n, inner,
         }
     }
 
@@ -58,6 +88,28 @@ impl Matrix {
             inner, m: self.m, n: self.n
         })
     }
+
+    pub fn apply(&self, f: impl Fn(f64) -> f64) -> Self {
+        Matrix {
+            m: self.m,
+            n: self.n,
+            inner: self.inner.iter().map(|&x| f(x)).collect()
+        }
+    }
+
+    pub fn transpose(&self) -> Self {
+        let mut inner = vec![0.;self.m*self.n];
+        for i in 0..self.m {
+            for j in 0..self.n {
+                inner[j*self.m+i] = self.inner[i*self.n+j];
+            }
+        }
+        Matrix {
+            m: self.n,
+            n: self.m,
+            inner
+        }
+    }
 }
 
 impl Add for &Matrix {
@@ -74,6 +126,48 @@ impl Add for &Matrix {
         Matrix {
             inner, m: self.m, n: self.n
         }
+    }
+}
+
+impl Add<f64> for &Matrix {
+    type Output = Matrix;
+
+    fn add(self, rhs: f64) -> Self::Output {
+        let inner = self.inner.iter()
+            .map(|x| x+rhs)
+            .collect();
+        Matrix {
+            inner, m: self.m, n: self.n
+        }
+    }
+}
+
+impl Add<&Matrix> for f64 {
+    type Output = Matrix;
+
+    fn add(self, rhs: &Matrix) -> Self::Output {
+        rhs + self
+    }
+}
+
+impl Add<f64> for Matrix {
+    type Output = Matrix;
+
+    fn add(self, rhs: f64) -> Self::Output {
+        let inner = self.inner.iter()
+            .map(|x| x+rhs)
+            .collect();
+        Matrix {
+            inner, m: self.m, n: self.n
+        }
+    }
+}
+
+impl Add<Matrix> for f64 {
+    type Output = Matrix;
+
+    fn add(self, rhs: Matrix) -> Self::Output {
+        rhs + self
     }
 }
 
@@ -152,6 +246,14 @@ impl Mul<f64> for &Matrix {
             m: self.m,
             n: self.n
         }
+    }
+}
+
+impl Mul<&Matrix> for f64 {
+    type Output = Matrix;
+
+    fn mul(self, rhs: &Matrix) -> Matrix {
+        rhs * self
     }
 }
 
