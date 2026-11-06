@@ -1,10 +1,16 @@
 use crate::matrix::Matrix;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct LinRegWeights {
-    // mx1
+    // nx1
     pub a: Matrix,
     pub b: f64,
+}
+
+// x: mxn
+// out: mx1
+pub fn eval(weights: &LinRegWeights, x: &Matrix) -> Matrix {
+    x*&weights.a+weights.b
 }
 
 // data:   mxn
@@ -15,7 +21,7 @@ pub fn fit(
     target: &Matrix,
     epoches: usize
     ) {
-    let lr = 0.0000001;
+    let lr = 0.01;
     let a = Matrix::std(data.n, 1);
     let b: f64 = Matrix::std(1, 1).get(0, 0).unwrap();
     weights.a = a;
@@ -23,7 +29,7 @@ pub fn fit(
 
     for i in 0..epoches {
         // mx1
-        let yhat = data*&weights.a+b;
+        let yhat = data*&weights.a+weights.b;
 
         // loss is MSE
         // MSE(y, y_hat) = sum((y-yhat)**2)
@@ -34,7 +40,9 @@ pub fn fit(
             .sum();
         let loss = loss/data.m as f64;
 
-        println!("[{}] loss: {}", i, loss);
+        if i % 1000000 == 0 {
+            println!("[{}] loss: {}", i, loss);
+        }
 
         // vector of -2*(y[i]-yhat[i])*(dyhat/dtheta)[i]
         // each row respects to ith sum component
