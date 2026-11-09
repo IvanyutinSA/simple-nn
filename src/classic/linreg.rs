@@ -21,10 +21,10 @@ pub fn fit(
     target: &Matrix,
     epoches: usize
     ) {
-    let lr = 0.001;
+    let lr = 0.01;
     let a = Matrix::std(data.n, 1);
     let b: f64 = Matrix::std(1, 1).get(0, 0).unwrap();
-    let lambda = 1;
+    let lambda = (10.)/data.m as f64;
     weights.a = a;
     weights.b = b;
 
@@ -40,6 +40,7 @@ pub fn fit(
             .iter()
             .sum();
         let loss = loss/data.m as f64;
+        let l2: f64 = lambda*weights.a.inner.iter().map(|x| x.powi(2)).sum::<f64>();
 
         if i % 1000000 == 0 {
             println!("[{}] loss: {}", i, loss);
@@ -47,7 +48,7 @@ pub fn fit(
 
         // vector of -2*(y[i]-yhat[i])*(dyhat/dtheta)[i]
         // each row respects to ith sum component
-        let dl_dyhat = -2.*&(target-&yhat);
+        let dl_dyhat = 1./(data.m as f64)*-2.*&(target-&yhat);
 
         let dyhat_db = Matrix::fill(yhat.m, 1, 1.);
 
@@ -58,7 +59,12 @@ pub fn fit(
 
         let dl_da = &data.transpose()*&dl_dyhat;
 
-        weights.a = &weights.a - &(lr*&dl_da);
-        weights.b = weights.b - lr*dl_db;
+        let grad_a = &dl_da + &(lambda*2.*&weights.a);
+        let grad_b = dl_db;
+
+        weights.a = &weights.a - &(lr*&grad_a);
+        weights.b = &weights.b - &(lr*&grad_b);
+        // weights.a = &weights.a - &(lr*&dl_da);
+        // weights.b = weights.b - lr*dl_db;
     }
 }
