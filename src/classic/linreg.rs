@@ -21,9 +21,10 @@ pub fn fit(
     target: &Matrix,
     epoches: usize
     ) {
-    let lr = 0.01;
+    let lr = 0.001;
     let a = Matrix::std(data.n, 1);
     let b: f64 = Matrix::std(1, 1).get(0, 0).unwrap();
+    let lambda = 1;
     weights.a = a;
     weights.b = b;
 

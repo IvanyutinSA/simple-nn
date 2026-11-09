@@ -10,34 +10,45 @@ use simple_nn::{
 
 
 fn main() {
-    let parsed = parse_csv("datasets/Salary_dataset.csv", ',').unwrap();
+    let parsed = parse_csv("datasets/advertising.csv", ',').unwrap();
     let data = Matrix::from(parsed);
-    let data = data.project_cols(&vec![1,2]);
+    // let data = data.project_cols(&vec![1,2]);
 
-    let x = data.project_cols(&vec![0]);
-    let y = data.project_cols(&vec![1]);
+    let mut x = data.project_cols(&vec![0, 1, 2]);
+    let y = data.project_cols(&vec![3]);
 
     let sigma2 = vec![
         st::variance(&x.project_cols(&vec![0]).inner),
+        st::variance(&x.project_cols(&vec![1]).inner),
+        st::variance(&x.project_cols(&vec![2]).inner),
         st::variance(&y.project_cols(&vec![0]).inner),
     ];
 
     let mu = vec![
         st::mean(&x.project_cols(&vec![0]).inner),
+        st::mean(&x.project_cols(&vec![1]).inner),
+        st::mean(&x.project_cols(&vec![2]).inner),
         st::mean(&y.project_cols(&vec![0]).inner),
     ];
 
     println!("{:?}", sigma2);
     println!("{:?}", mu);
 
-    let x = x.apply(|x| (x-mu[0])/sigma2[0].sqrt());
+    // let x = x.apply(|x| (x-mu[0])/sigma2[0].sqrt());
+    for i in 0..x.m {
+        for j in 0..x.n {
+            x.set(i, j, (x.get(i,j).unwrap()-mu[j])/sigma2[j].sqrt()).unwrap();
+        }
+    }
+
+
     let y = y.apply(|y| (y-mu[1])/sigma2[1].sqrt());
 
     // let test_rows = vec![4, 15, 16, 22, 27];
     let test_rows = (0..30).collect();
 
     let mut weights = linreg::LinRegWeights::default();
-    linreg::fit(&mut weights, &x, &y, 1000);
+    linreg::fit(&mut weights, &x, &y, 1000000);
     println!("{:?}", weights);
 
     println!("{:?}", metrics::r2(
