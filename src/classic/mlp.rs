@@ -45,8 +45,10 @@ impl LinearLayer {
         //     w0: Matrix::std(1, k_out),
         // }
         LinearLayer { 
-            w: Matrix::fill(n_in, k_out, (2./n_in as f64).sqrt()),
-            w0: Matrix::fill(1, k_out, 0.),
+            // w: Matrix::fill(n_in, k_out, (2./n_in as f64).sqrt()),
+            // w0: Matrix::fill(1, k_out, 0.),
+            w: Matrix::he_init(n_in, k_out),
+            w0: Matrix::he_init(1, k_out),
         }
     }
 }

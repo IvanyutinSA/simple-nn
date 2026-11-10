@@ -61,6 +61,21 @@ impl Matrix {
         }
     }
 
+    pub fn he_init(n_in: usize, k_out: usize) -> Self {
+        let mean = 0.;
+        let std_dev = (2./(n_in as f64)).sqrt();
+        let mut rng = rand::rng();
+        let inner = rand_distr::StandardNormal.sample_iter(&mut rng)
+            .take(n_in*k_out)
+            .map(|x: f64| mean + x*std_dev)
+            .collect();
+        Matrix {
+            m: n_in,
+            n: k_out,
+            inner
+        }
+    }
+
     pub fn get(&self, i: usize, j: usize) -> MatResult<f64> {
         if self.m <= i || self.n <= j {
             return Err(MatError::OutOfBounds);
