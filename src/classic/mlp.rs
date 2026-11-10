@@ -19,6 +19,7 @@ pub trait Activation {
 
 
 pub trait Layer {
+    fn weights(&self) -> Vec<Matrix>;
     fn update(&mut self, grad: GeneralGrad);
     fn forward(&self, x: &Matrix) -> Matrix;
     fn backward(&self, x: &Matrix, grad: &Matrix)
@@ -59,6 +60,10 @@ pub struct GeneralGrad {
 }
 
 impl Layer for LinearLayer {
+    fn weights(&self) -> Vec<Matrix> {
+        vec![self.w.clone()]
+    }
+
     // x: mxn
     // x.T@w: mxk
     // out: mxk
@@ -154,6 +159,9 @@ pub fn fit(x: &Matrix, y: &Matrix) -> NNSequence {
     let loss_f = MSE;
     let epochs = 50000;
     let mut last_loss = -1.;
+    let l2_lambda = 1./x.m as f64;
+
+    // l2 is l*sum(wegihts^2)
 
     for epoch in 0..epochs {
         let mut us = vec![x.clone()];
@@ -168,6 +176,21 @@ pub fn fit(x: &Matrix, y: &Matrix) -> NNSequence {
             }
         }
         let loss = loss_f.eval(y, &us.last().unwrap());
+        
+        // l2 calcs
+
+        let l2_loss = l2_lambda*mlp.seq.iter().filter_map(|component| {
+            match component {
+                NNComponent::Layer(layer) => {
+                    Some(layer.weights())
+                },
+                _ => None,
+            }
+        }).flatten().map(|mat: Matrix| {
+            mat.inner.iter().map(|x: &f64| x.powi(2)).collect::<Vec<f64>>()
+        }).flatten().sum::<f64>();
+
+        let loss = loss + l2_loss;
         println!("[{}], loss: {}",
             epoch, loss);
         if (last_loss - loss).abs() < 0.00000001 {
@@ -187,6 +210,14 @@ pub fn fit(x: &Matrix, y: &Matrix) -> NNSequence {
                             mat.apply(|x| x*lr)
                         }).collect();
                     layer.update(gen_grad);
+                    let l2grad = GeneralGrad {
+                        grads: vec![
+                            // -2.*w
+                            layer.weights()[0].apply(|x| 2.*x*l2_lambda*lr),
+                            Matrix::fill(1, layer.weights()[0].n, 0.)
+                        ]
+                    };
+                    layer.update(l2grad);
                 }
                 NNComponent::ActivationFunction(func) => {
                     grad = func.deriv(&us.pop().unwrap())
