@@ -110,6 +110,27 @@ impl Matrix {
             inner
         }
     }
+
+    pub fn broadcast_rows(&self, m: usize) -> Matrix {
+        if self.m != 1 {
+            panic!();
+        }
+        Matrix {
+            inner: vec![self.inner.clone();m].into_iter().flatten().collect(),
+            m: m,
+            n: self.n,
+        }
+    }
+
+    pub fn sum_rows(&self) -> Matrix {
+        let mut mat = Matrix::fill(1, self.n, 0.);
+        for i in 0..self.m {
+            for j in 0..self.n {
+                mat.inner[j] += self.inner[i*self.n+j];
+            }
+        }
+        mat
+    }
 }
 
 impl Add for &Matrix {
